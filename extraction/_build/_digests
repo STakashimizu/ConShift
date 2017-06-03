@@ -1,0 +1,7 @@
+"Resource: /home/geli/Projects/coq/scripts/src/shift_level/extraction/main.ml": "\146\156@;\151\0240\236\151,\178\201wk>2"
+"Rule: ocaml: ml & cmi -> cmx & o (%=main )": " &\007\r\222\197\011\200JH\003~\147\180M0"
+"Rule: ocaml dependencies mli (%=main )": "\005\177o\020\1971\128\2358\232\230\137\175\132\176@"
+"Resource: /home/geli/Projects/coq/scripts/src/shift_level/extraction/main.mli": "\b\030\146\1752\t\170\012\007\150\1921f\130\006r"
+"Rule: ocaml dependencies ml (%=main )": "\017y)y\152\247\023[4\021\239\1584\154\024\250"
+"Rule: ocaml: mli -> cmi (%=main )": "A/\rEO,\011\232\128\002I\175cG\191\005"
+"Rule: ocaml: cmx* & o* -> native (%=main )": "e\021\191\186\212\226\183S\132\136\214\000?y\000\175"
