@@ -1,4 +1,5 @@
 build:
+	mkdir -p extraction
 	$(MAKE) -f Makefile.coq
 	cd extraction && ocamlbuild main.native -use-ocamlfind -package io-system
 
