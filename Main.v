@@ -70,7 +70,7 @@ Definition shift (argv : list LString.t) : C.t System.effect unit :=
   | [_; num; file_name] =>
     let! content := System.read_file file_name in
     match content with
-    | None => System.log (LString.s "Cannot read the file.")
+    | None         => System.log (LString.s "Cannot read the file.")
     | Some content =>
       let shifter := if is_minus num then dec else inc in
       match lstr2nat num with
@@ -78,9 +78,33 @@ Definition shift (argv : list LString.t) : C.t System.effect unit :=
         | None   => System.log (LString.s "Wrong number spec.")
       end
     end
-  | _ => System.log (LString.s "Expected one parameter.")
+  | _                   => System.log (LString.s "Expected two parameter.")
   end.
 
 
 Definition main := Extraction.launch shift.
 Extraction "./extraction/main" main.
+
+(* (** Ask for the user name and answer hello. *) *)
+(* Definition your_name (argv : list LString.t) : C.t System.effect unit := *)
+(*   do! System.log (LString.s "What is your name?") in *)
+(*   let! name := System.read_line in *)
+(*   match name with *)
+(*   | None => ret tt *)
+(*   | Some name => System.log (LString.s "Hello " ++ name ++ LString.s "!") *)
+(*   end. *)
+
+(* Definition run_your_name_ok (argv : list LString.t) (name : LString.t) *)
+(* : Run.t (your_name argv) tt. *)
+(*   Show Proof. *)
+(*   (* 1 subgoal, subgoal 1 (ID 47) *) *)
+  
+(* (*   argv : list LString.t *) *)
+(* (*   name : LString.t *) *)
+(* (*   ============================ *) *)
+(* (*   Run.t (your_name argv) tt *) *)
+
+(* (* (dependent evars:) *) *)
+
+
+(*   eapply Run.Let. *)
