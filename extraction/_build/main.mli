@@ -1,8 +1,21 @@
 type __ = Obj.t
 
+type nat =
+| O
+| S of nat
+
 val option_map : ('a1 -> 'a2) -> 'a1 option -> 'a2 option
 
 val app : 'a1 list -> 'a1 list -> 'a1 list
+
+type comparison =
+| Eq
+| Lt
+| Gt
+
+val rev_append : 'a1 list -> 'a1 list -> 'a1 list
+
+val rev' : 'a1 list -> 'a1 list
 
 val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list
 
@@ -11,10 +24,38 @@ type positive =
 | XO of positive
 | XH
 
+type n =
+| N0
+| Npos of positive
+
 type z =
 | Z0
 | Zpos of positive
 | Zneg of positive
+
+module Pos :
+ sig
+  val succ : positive -> positive
+
+  val add : positive -> positive -> positive
+
+  val add_carry : positive -> positive -> positive
+
+  val mul : positive -> positive -> positive
+
+  val compare_cont : comparison -> positive -> positive -> comparison
+
+  val compare : positive -> positive -> comparison
+ end
+
+module N :
+ sig
+  val add : n -> n -> n
+
+  val mul : n -> n -> n
+
+  val compare : n -> n -> comparison
+ end
 
 type t =
 | New
@@ -34,6 +75,14 @@ val ret : t -> 'a1 -> 'a1 t0
 
 val call : t -> command -> answer t0
 
+val n_of_digits : bool list -> n
+
+val n_of_ascii : char -> n
+
+val compare0 : char -> char -> comparison
+
+val eqb : char -> char -> bool
+
 type t1 = char list
 
 module Option :
@@ -43,9 +92,17 @@ module Option :
 
 module LString :
  sig
+  val to_string : t1 -> char list
+
   val of_string : char list -> t1
 
   val s : char list -> t1
+
+  val join : t1 -> t1 list -> t1
+
+  val split_aux : t1 -> char -> t1 -> t1 list
+
+  val split : t1 -> char -> t1 list
 
   type t = char list
 
@@ -66,6 +123,8 @@ type t2 =
 | ReadLine
 
 val effect : t
+
+val read_file : LString.t -> LString.t option t0
 
 val printl : LString.t -> bool t0
 
@@ -135,6 +194,12 @@ val eval0 : 'a1 t0 -> 'a1 Lwt.t
 
 val launch0 : (LString.t list -> unit t0) -> unit
 
-val hello_world : LString.t list -> unit t0
+val inc : nat -> LString.t -> LString.t
+
+val nr : char
+
+val map_line : (t1 -> t1) -> LString.t -> LString.t
+
+val cat'' : LString.t list -> unit t0
 
 val main : unit

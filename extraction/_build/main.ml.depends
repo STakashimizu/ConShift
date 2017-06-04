@@ -1,1 +1,1 @@
-main.ml: Big_int IoSystem Lwt Lwt_main Obj
+main.ml: Big_int Char IoSystem Lwt Lwt_main Obj

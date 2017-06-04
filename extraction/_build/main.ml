@@ -1,5 +1,9 @@
 type __ = Obj.t
 
+type nat =
+| O
+| S of nat
+
 (** val option_map : ('a1 -> 'a2) -> 'a1 option -> 'a2 option **)
 
 let option_map f = function
@@ -13,6 +17,23 @@ let rec app l m =
   | [] -> m
   | a :: l1 -> a :: (app l1 m)
 
+type comparison =
+| Eq
+| Lt
+| Gt
+
+(** val rev_append : 'a1 list -> 'a1 list -> 'a1 list **)
+
+let rec rev_append l l' =
+  match l with
+  | [] -> l'
+  | a :: l0 -> rev_append l0 (a :: l')
+
+(** val rev' : 'a1 list -> 'a1 list **)
+
+let rev' l =
+  rev_append l []
+
 (** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
 
 let rec map f = function
@@ -24,10 +45,132 @@ type positive =
 | XO of positive
 | XH
 
+type n =
+| N0
+| Npos of positive
+
 type z =
 | Z0
 | Zpos of positive
 | Zneg of positive
+
+module Pos =
+ struct
+  (** val succ : positive -> positive **)
+
+  let rec succ = function
+  | XI p -> XO (succ p)
+  | XO p -> XI p
+  | XH -> XO XH
+
+  (** val add : positive -> positive -> positive **)
+
+  let rec add x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q -> XO (add_carry p q)
+       | XO q -> XI (add p q)
+       | XH -> XO (succ p))
+    | XO p ->
+      (match y with
+       | XI q -> XI (add p q)
+       | XO q -> XO (add p q)
+       | XH -> XI p)
+    | XH ->
+      (match y with
+       | XI q -> XO (succ q)
+       | XO q -> XI q
+       | XH -> XO XH)
+
+  (** val add_carry : positive -> positive -> positive **)
+
+  and add_carry x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q -> XI (add_carry p q)
+       | XO q -> XO (add_carry p q)
+       | XH -> XI (succ p))
+    | XO p ->
+      (match y with
+       | XI q -> XO (add_carry p q)
+       | XO q -> XI (add p q)
+       | XH -> XO (succ p))
+    | XH ->
+      (match y with
+       | XI q -> XI (succ q)
+       | XO q -> XO (succ q)
+       | XH -> XI XH)
+
+  (** val mul : positive -> positive -> positive **)
+
+  let rec mul x y =
+    match x with
+    | XI p -> add y (XO (mul p y))
+    | XO p -> XO (mul p y)
+    | XH -> y
+
+  (** val compare_cont : comparison -> positive -> positive -> comparison **)
+
+  let rec compare_cont r x y =
+    match x with
+    | XI p ->
+      (match y with
+       | XI q -> compare_cont r p q
+       | XO q -> compare_cont Gt p q
+       | XH -> Gt)
+    | XO p ->
+      (match y with
+       | XI q -> compare_cont Lt p q
+       | XO q -> compare_cont r p q
+       | XH -> Gt)
+    | XH ->
+      (match y with
+       | XH -> r
+       | _ -> Lt)
+
+  (** val compare : positive -> positive -> comparison **)
+
+  let compare =
+    compare_cont Eq
+ end
+
+module N =
+ struct
+  (** val add : n -> n -> n **)
+
+  let add n0 m =
+    match n0 with
+    | N0 -> m
+    | Npos p ->
+      (match m with
+       | N0 -> n0
+       | Npos q -> Npos (Pos.add p q))
+
+  (** val mul : n -> n -> n **)
+
+  let mul n0 m =
+    match n0 with
+    | N0 -> N0
+    | Npos p ->
+      (match m with
+       | N0 -> N0
+       | Npos q -> Npos (Pos.mul p q))
+
+  (** val compare : n -> n -> comparison **)
+
+  let compare n0 m =
+    match n0 with
+    | N0 ->
+      (match m with
+       | N0 -> Eq
+       | Npos _ -> Lt)
+    | Npos n' ->
+      (match m with
+       | N0 -> Gt
+       | Npos m' -> Pos.compare n' m')
+ end
 
 type t =
 | New
@@ -53,6 +196,38 @@ let ret _ x =
 let call _ command0 =
   Call command0
 
+(** val n_of_digits : bool list -> n **)
+
+let rec n_of_digits = function
+| [] -> N0
+| b :: l' ->
+  N.add (if b then Npos XH else N0) (N.mul (Npos (XO XH)) (n_of_digits l'))
+
+(** val n_of_ascii : char -> n **)
+
+let n_of_ascii a =
+  (* If this appears, you're using Ascii internals. Please don't *)
+ (fun f c ->
+  let n = Char.code c in
+  let h i = (n land (1 lsl i)) <> 0 in
+  f (h 0) (h 1) (h 2) (h 3) (h 4) (h 5) (h 6) (h 7))
+    (fun a0 a1 a2 a3 a4 a5 a6 a7 ->
+    n_of_digits
+      (a0 :: (a1 :: (a2 :: (a3 :: (a4 :: (a5 :: (a6 :: (a7 :: [])))))))))
+    a
+
+(** val compare0 : char -> char -> comparison **)
+
+let compare0 x y =
+  N.compare (n_of_ascii x) (n_of_ascii y)
+
+(** val eqb : char -> char -> bool **)
+
+let eqb x y =
+  match compare0 x y with
+  | Eq -> true
+  | _ -> false
+
 type t1 = char list
 
 module Option =
@@ -67,6 +242,12 @@ module Option =
 
 module LString =
  struct
+  (** val to_string : t1 -> char list **)
+
+  let rec to_string = function
+  | [] -> []
+  | c :: s1 -> c::(to_string s1)
+
   (** val of_string : char list -> t1 **)
 
   let rec of_string = function
@@ -77,6 +258,30 @@ module LString =
 
   let s =
     of_string
+
+  (** val join : t1 -> t1 list -> t1 **)
+
+  let rec join separator = function
+  | [] -> []
+  | s0 :: l0 ->
+    (match l0 with
+     | [] -> s0
+     | _ :: _ -> app s0 (app separator (join separator l0)))
+
+  (** val split_aux : t1 -> char -> t1 -> t1 list **)
+
+  let rec split_aux s0 c beginning =
+    match s0 with
+    | [] -> (rev' beginning) :: []
+    | c' :: s1 ->
+      if eqb c c'
+      then (rev' beginning) :: (split_aux s1 c [])
+      else split_aux s1 c (c' :: beginning)
+
+  (** val split : t1 -> char -> t1 list **)
+
+  let split s0 c =
+    split_aux s0 c []
 
   type t = char list
 
@@ -103,6 +308,11 @@ type t2 =
 
 let effect =
   New
+
+(** val read_file : LString.t -> LString.t option t0 **)
+
+let read_file file_name =
+  Obj.magic call effect (ReadFile file_name)
 
 (** val printl : LString.t -> bool t0 **)
 
@@ -266,14 +476,97 @@ let launch0 main0 =
   let argv0 = map String.to_lstring Sys.argv in
   Lwt.launch (eval0 (main0 argv0))
 
-(** val hello_world : LString.t list -> unit t0 **)
+(** val inc : nat -> LString.t -> LString.t **)
 
-let hello_world _ =
+let rec inc n0 line =
+  let str = LString.to_string line in
+  (match n0 with
+   | O -> LString.s str
+   | S n' ->
+     inc n'
+       (LString.s
+         (let rec inc' st = match st with
+          | [] -> st
+          | a::s0 ->
+            (* If this appears, you're using Ascii internals. Please don't *)
+ (fun f c ->
+  let n = Char.code c in
+  let h i = (n land (1 lsl i)) <> 0 in
+  f (h 0) (h 1) (h 2) (h 3) (h 4) (h 5) (h 6) (h 7))
+              (fun b b0 b1 b2 b3 b4 b5 b6 ->
+              if b
+              then if b0
+                   then if b1
+                        then st
+                        else if b2
+                             then st
+                             else if b3
+                                  then st
+                                  else if b4
+                                       then if b5
+                                            then st
+                                            else if b6
+                                                 then st
+                                                 else '#'::('#'::s0)
+                                       else st
+                   else st
+              else if b0
+                   then st
+                   else if b1
+                        then st
+                        else if b2
+                             then st
+                             else if b3
+                                  then st
+                                  else if b4
+                                       then if b5
+                                            then st
+                                            else if b6
+                                                 then st
+                                                 else ' '::(inc' s0)
+                                       else st)
+              a
+          in inc' str)))
+
+(** val nr : char **)
+
+let nr =
+  '\n'
+
+(** val map_line : (t1 -> t1) -> LString.t -> LString.t **)
+
+let map_line f code =
+  LString.join (LString.s (nr::[])) (map f (LString.split code nr))
+
+(** val cat'' : LString.t list -> unit t0 **)
+
+let cat'' = function
+| [] ->
   log
     (LString.s
-      ('H'::('e'::('l'::('l'::('o'::(' '::('w'::('o'::('r'::('l'::('d'::('!'::[])))))))))))))
+      ('E'::('x'::('p'::('e'::('c'::('t'::('e'::('d'::(' '::('o'::('n'::('e'::(' '::('p'::('a'::('r'::('a'::('m'::('e'::('t'::('e'::('r'::('.'::[]))))))))))))))))))))))))
+| _ :: l ->
+  (match l with
+   | [] ->
+     log
+       (LString.s
+         ('E'::('x'::('p'::('e'::('c'::('t'::('e'::('d'::(' '::('o'::('n'::('e'::(' '::('p'::('a'::('r'::('a'::('m'::('e'::('t'::('e'::('r'::('.'::[]))))))))))))))))))))))))
+   | file_name :: l0 ->
+     (match l0 with
+      | [] ->
+        Let ((Obj.magic read_file file_name), (fun content ->
+          match Obj.magic content with
+          | Some content0 -> log (map_line (inc (S O)) content0)
+          | None ->
+            log
+              (LString.s
+                ('C'::('a'::('n'::('n'::('o'::('t'::(' '::('r'::('e'::('a'::('d'::(' '::('t'::('h'::('e'::(' '::('f'::('i'::('l'::('e'::('.'::[]))))))))))))))))))))))))
+      | _ :: _ ->
+        log
+          (LString.s
+            ('E'::('x'::('p'::('e'::('c'::('t'::('e'::('d'::(' '::('o'::('n'::('e'::(' '::('p'::('a'::('r'::('a'::('m'::('e'::('t'::('e'::('r'::('.'::[]))))))))))))))))))))))))))
 
 (** val main : unit **)
 
 let main =
-  launch0 hello_world
+  launch0 cat''
